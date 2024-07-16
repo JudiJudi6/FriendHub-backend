@@ -2,6 +2,20 @@ import mongoose from "mongoose";
 import validator from "validator";
 import bcrypt from "bcryptjs";
 
+export interface UserDocument extends mongoose.Document {
+  name: string;
+  surname: string;
+  email: string;
+  photo?: string;
+  password: string;
+  passwordConfirm: string;
+
+  correctPassword(
+    candidatePassword: string,
+    userPassword: string
+  ): Promise<boolean>;
+}
+
 const userSchema = new mongoose.Schema({
   name: {
     type: String,
@@ -23,6 +37,7 @@ const userSchema = new mongoose.Schema({
     type: String,
     required: [true, "Password is required"],
     minlenght: 8,
+    select: false,
   },
   passwordConfirm: {
     type: String,
@@ -45,6 +60,13 @@ userSchema.pre("save", async function (next) {
   next();
 });
 
-const User = mongoose.model("User", userSchema);
+userSchema.methods.correctPassword = async function (
+  candidatePassword: string,
+  userPassword: string
+) {
+  return await bcrypt.compare(candidatePassword, userPassword);
+};
+
+const User = mongoose.model<UserDocument>("User", userSchema);
 
 export default User;
